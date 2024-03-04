@@ -1,0 +1,5 @@
+customer_id,customer_name,customer_lastname,country_id
+1,John,Doe,1
+2,Alice,Smith,1
+3,Bob,Johnson,2
+4,Lisa,Brown,2
