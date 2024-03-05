@@ -2,6 +2,9 @@ import findspark
 findspark.init()
 import logging
 import os
+from os import listdir
+from os.path import isfile, join
+import pandas as pd
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col
 
@@ -24,17 +27,14 @@ class CsvPipeline:
         """
         Reads the CSV file and prints its schema.
         """
-        print("Aqui Schema")
-
-        df = self.read_csv_pipeline()
-        df.printSchema()
+        #df = self.read_csv_pipeline()
+        self.df.printSchema()
 
     def show_head(self, n: int = 5):
         """
         Reads the CSV file and shows the first n rows.
         """
-        df = self.read_csv_pipeline()
-        print("Aqui Head")
+        #df = self.read_csv_pipeline()
         df.show(n)
 
     def get_files(self) -> list:
@@ -43,13 +43,24 @@ class CsvPipeline:
         """
         # Initialize an empty list to store the full file paths
         csv_files = []
+        
+        # Check if the filepath exists and is a directory
+        if not os.path.exists(self.filepath):
+            logger.error(f"Directory does not exist: {self.filepath}")
+            return csv_files  # Return empty list if directory does not exist
+
+        if not os.path.isdir(self.filepath):
+            logger.error(f"Path is not a directory: {self.filepath}")
+            return csv_files  # Return empty list if filepath is not a directory
+
         # Iterate over the files in the specified directory
         for file in os.listdir(self.filepath):
-            # Check if the file is a CSV file
-            if file.endswith('.csv'):
+            # Check if the file is a CSV file (case-insensitive)
+            if file.lower().endswith('.csv'):
                 full_path = os.path.join(self.filepath, file)  # Construct the full file path
                 csv_files.append(full_path)  # Add the full file path to the list
 
+        print("CSV FIles names: ", csv_files)
         # Return the list of CSV file paths
         return csv_files
 
@@ -94,6 +105,7 @@ class CsvPipeline:
 
         # If the file exists and is readable, proceed to read it into a DataFrame
         try:
+            print("File paaaath:", filepath)
             df = self.spark.read.format("csv").options(**self.options).load(filepath)
             print("Reading completed at process file")
         except Exception as e:
@@ -109,8 +121,9 @@ class CsvPipeline:
         # Assuming additional processing steps would be defined here
         logger.info(f"Successfully processed {filepath}")
 
-        self.remove_duplicates(df)
-        self.handle_missing_values(df, 'remove')
+        #self.remove_duplicates(df)
+        #self.handle_missing_values(df, 'remove')
+
         self.write_to_delta(df, os.path.splitext(os.path.basename(filepath))[0])
 
 
@@ -150,12 +163,14 @@ class CsvPipeline:
     
     def write_to_delta(self, df, filename):
         df.show()
-        print("Value variable filename: ", filename)
+        #print("Value variable filename: ", filename)
         # Define the path for the Delta table, incorporating the filename
-        delta_table_path = os.path.join("/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/csv-pipeline/docs", filename)
+        delta_table_path = os.path.join("//Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/docs/", filename)
         print("Value variable delta_table_path: ", delta_table_path)
         # Write the DataFrame to Delta Lake, creating a separate table for each file
-        df.write.format("delta").mode("append").save(delta_table_path)
+        pathname2 = delta_table_path+filename
+        df.write.format("delta").save("/tmp/teste")
+        print("Saving successfull")
 
 
     def read_csv_pipeline(self):
