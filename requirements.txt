@@ -1,0 +1,4 @@
+deltalake==0.16.0
+pyspark==3.5.1
+findspark==2.0.1
+delta-spark==3.1.0

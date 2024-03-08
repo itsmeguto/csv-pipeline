@@ -4,12 +4,9 @@ import logging
 import os
 from os import listdir
 from os.path import isfile, join
-import pandas as pd
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col
-from delta import *
-
-
+from deltalake import *
 
 # Setting up logging
 logging.basicConfig(level=logging.INFO)
@@ -122,8 +119,8 @@ class CsvPipeline:
         # Assuming additional processing steps would be defined here
         logger.info(f"Successfully processed {filepath}")
 
-        #self.remove_duplicates(df)
-        #self.handle_missing_values(df, 'remove')
+        self.remove_duplicates(df)
+        self.handle_missing_values(df, 'remove')
 
         self.write_to_delta(df, os.path.splitext(os.path.basename(filepath))[0])
 
@@ -163,14 +160,13 @@ class CsvPipeline:
             raise
     
     def write_to_delta(self, df, filename):
-        df.show()
-        delta_table_path = os.path.join("//Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/docs/", filename)
-        print("Value variable delta_table_path: ", delta_table_path)
-        # Write the DataFrame to Delta Lake, creating a separate table for each file
-        pathname2 = delta_table_path+filename
-        pathfinal = "/tmp"+filename
-        df.write.format("delta").save(pathfinal)
+        delta_table_path = os.path.join("/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/table", filename)
+        
+        pathfinal = "/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/table"
+        df.write.format("parquet").mode("overwrite").save(pathfinal)
         print("Saving successfull")
+
+        self.spark.read.load("/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/table").show()
 
 
     def read_csv_pipeline(self):
