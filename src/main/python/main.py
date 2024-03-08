@@ -3,12 +3,13 @@ from csv_pipeline import CsvPipeline  # Make sure this matches the name of your 
 
 if __name__ == "__main__":
     # Initialize a Spark session
-    spark = SparkSession.builder.appName("CsvPipeline").getOrCreate()
-        #.config("spark.jars.packages", "io.delta:delta-core_2.12:3.5.0") \
-        #.config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-        #.config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+    spark = SparkSession.builder.appName("CsvPipeline") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .getOrCreate()
         
-
+        #error when getting this catalog
+        #.config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        #.config("spark.jars.packages", "io.delta:delta-core_2.12:3.5.0") \
     # Define the file path and options for reading the CSV
     csv_file_path = "/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/docs"  # Change this to the path of your actual CSV file
     options = {'header': 'true', 'inferSchema': 'true'}  # Adjust these options as needed

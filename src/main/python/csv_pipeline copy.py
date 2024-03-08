@@ -7,8 +7,7 @@ from os.path import isfile, join
 import pandas as pd
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col
-from delta import *
-
+from pyspark.sql import SparkSession
 
 
 # Setting up logging
@@ -21,7 +20,7 @@ class CsvPipeline:
         Initializes the CSV pipeline with a Spark session, file path, and optional read options.
         """
         self.spark = spark_session
-        #self.spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
+        self.spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
         self.filepath = filepath
         self.options = options if options is not None else {}
 
@@ -97,20 +96,25 @@ class CsvPipeline:
         """
         # Check if the file exists
         if not os.path.exists(filepath):
+            print("Erro process file 1")
             logger.error(f"File does not exist: {filepath}")
             return
 
         # Check if the file is readable (i.e., has read permissions)
         if not os.access(filepath, os.R_OK):
+            print("Erro process file 2")
             logger.error(f"File is not accessible (read permissions required): {filepath}")
             return
 
         # If the file exists and is readable, proceed to read it into a DataFrame
         try:
+            print("File paaaath:", filepath)
             df = self.spark.read.format("csv").options(**self.options).load(filepath)
             print("Reading completed at process file")
+            print("Erro process file 3")
         except Exception as e:
             logger.error(f"Failed to read file {filepath}: {str(e)}")
+            print("Erro process file 4")
             return
 
         # Check for missing expected columns
@@ -124,8 +128,8 @@ class CsvPipeline:
 
         #self.remove_duplicates(df)
         #self.handle_missing_values(df, 'remove')
-
-        self.write_to_delta(df, os.path.splitext(os.path.basename(filepath))[0])
+        #print ("What is this: ",  os.path.splitext(os.path.basename(filepath))[0])
+        #self.write_to_delta(df, os.path.splitext(os.path.basename(filepath))[0])
 
 
     def remove_duplicates(self, df: DataFrame) -> DataFrame:
@@ -163,14 +167,13 @@ class CsvPipeline:
             raise
     
     def write_to_delta(self, df, filename):
-        df.show()
+        #df.show()
+        #print("Value variable filename: ", filename)
+        # Define the path for the Delta table, incorporating the filename
         delta_table_path = os.path.join("//Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/docs/", filename)
         print("Value variable delta_table_path: ", delta_table_path)
         # Write the DataFrame to Delta Lake, creating a separate table for each file
-        pathname2 = delta_table_path+filename
-        pathfinal = "/tmp"+filename
-        df.write.format("delta").save(pathfinal)
-        print("Saving successfull")
+        #df.write.format("delta").mode("append").saveAsTable(filename).save(delta_table_path)
 
 
     def read_csv_pipeline(self):
@@ -180,3 +183,22 @@ class CsvPipeline:
         # Validate and process files
         self.validate_and_process_files()
         
+if __name__ == "__main__":
+    # Initialize a Spark session
+    spark = SparkSession.builder.appName("CsvPipeline") \
+        .config("spark.jars.packages", "io.delta:delta-core_2.12:3.5.0") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .getOrCreate()
+
+    # Define the file path and options for reading the CSV
+    csv_file_path = "/Users/augustobarbosa/Py_Projects/CSV-Pipeline/csv-pipeline/docs"  # Change this to the path of your actual CSV file
+    options = {'header': 'true', 'inferSchema': 'true'}  # Adjust these options as needed
+
+    # Create an instance of the CsvPipeline class
+    csv_pipeline = CsvPipeline(spark, csv_file_path, options)
+    csv_pipeline.read_csv_pipeline() 
+
+    
+    # Stop the Spark session
+    spark.stop()
